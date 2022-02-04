@@ -1,5 +1,3 @@
-from turtle import color
-from unittest.mock import patch
 import numpy as np
 from scipy.signal import convolve2d
 import matplotlib.pyplot as plt
