@@ -1,11 +1,12 @@
+from unittest.mock import patch
 import numpy as np
 from scipy.signal import convolve2d
 import matplotlib.pyplot as plt
 from random import sample, shuffle
 import cv2
 
-from pixel import Pixel
-from priority import get_patch
+from pixel import Pixel, PixelMap
+from priority import get_patch, compute_confidence, compute_isophotes, compute_data_term
 
 
 scharr = np.array([[ -3-3j, 0-10j,  +3 -3j],
@@ -60,10 +61,12 @@ def get_normal(x, y, mask):
     normal = normal / norm
     return normal
 
-def get_pixel_map(im):
-    height, width = im.shape[:2]
-    pixel_map = [[Pixel(im[x,y], x, y) for y in range(width)] for x in range(height)]
-    return pixel_map
+def inpainting(im, mask):
+    pixel_map = PixelMap(im, mask)
+    contour = get_contour(mask)
+    for p in contour:
+        pixel_map.udpate_confidence(p)
+    return
 
 
 if __name__ == "__main__":
