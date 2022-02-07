@@ -1,5 +1,3 @@
-from turtle import color
-from unittest.mock import patch
 import numpy as np
 from scipy.signal import convolve2d
 import matplotlib.pyplot as plt
@@ -28,24 +26,23 @@ def load_mask(mask_file, threshold=100):
 
 def get_contour(mask):
     # ATTENTION: peut-être vérifier que tous les points du contours sont à 255 dans le masque
-    contour = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)[0][0]
-    contour = contour.squeeze()
+    contour = cv2.findContours(np.uint8(mask), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)[0][0]
+    contour = np.flip(contour.squeeze(), axis=1)
     return contour
 
 def show_contour(mask, contour, idx_to_show=None):
     new_mask = np.repeat(mask[:,:,None], 3, axis=2)
     for ind in contour:
-        new_mask[ind[1],ind[0]] = [255,0,0]
+        new_mask[ind[0],ind[1]] = [255,0,0]
     plt.figure()
     plt.imshow(new_mask, interpolation="none")
     if idx_to_show is not None:
         for idx in idx_to_show:
             point = contour[idx]
-            normal = get_normal(point[1], point[0], mask)
-            # plt.scatter(point[0], point[1], s=1, color="green")
+            normal = get_normal(point[0], point[1], mask)
             factor = 1e1
-            plt.plot([point[0], point[0] + normal[1]*factor],
-                    [point[1], point[1] + normal[0]*factor],
+            plt.plot([point[1], point[1] + normal[1]*factor],
+                    [point[0], point[0] + normal[0]*factor],
                     linestyle='-', linewidth=1, color="green")
     plt.axis("off")
     plt.show()
@@ -53,27 +50,34 @@ def show_contour(mask, contour, idx_to_show=None):
 def get_normal(x, y, mask):
     patch = mask[x-1:x+2,y-1:y+2]
     assert patch.size == 9
-    grad = convolve2d(patch, scharr, mode="valid")[0,0]
-    gy = np.real(grad)
-    gx = np.imag(grad)
-    normal = np.array([gx, gy])
-    normal = normal / (np.linalg.norm(normal) + 1e-5)
-    print("NORM:", np.linalg.norm(normal))
-    # for tab in [patch]:
-    #     plt.figure()
-    #     plt.imshow(tab)
-    #     plt.show()
+    grad = -np.sum(patch*scharr)
+    gx = np.real(grad)
+    gy = np.imag(grad)
+    normal = np.array([gy, gx])
+    norm = np.linalg.norm(normal)
+    if norm == 0:
+        return normal
+    normal = normal / norm
     return normal
+
+def get_pixel_map(im):
+    height, width = im.shape[:2]
+    pixel_map = [[Pixel(im[x,y], x, y) for y in range(width)] for x in range(height)]
+    return pixel_map
 
 
 if __name__ == "__main__":
     image_file = "images/image3.jpg"
     im = load_image(image_file)
-    print(im.shape)
+    print("Image :", im.shape)
 
     mask_file = "images/mask3.jpg"
     mask = load_mask(mask_file)
-    print(mask.shape)
+    print("Masque :", mask.shape)
+
+    pixel_map = get_pixel_map(im)
+    print(len(pixel_map))
+    print(len(pixel_map[0]))
 
     # cv2.imshow("Image", im)
     # cv2.waitKey(0)

@@ -13,5 +13,5 @@ class Pixel:
 
     def update_priority(self):
         self.priority = self.confidence*self.data_term
-    
+
 # %%
