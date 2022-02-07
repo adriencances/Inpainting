@@ -6,7 +6,7 @@ from random import sample, shuffle
 import cv2
 
 from pixel import Pixel, PixelMap
-from priority import get_patch, compute_confidence, compute_isophotes, compute_data_term
+# from priority import compute_confidence, compute_isophotes, compute_data_term
 
 
 scharr = np.array([[ -3-3j, 0-10j,  +3 -3j],
@@ -27,8 +27,11 @@ def load_mask(mask_file, threshold=100):
 
 def get_contour(mask):
     # ATTENTION: peut-être vérifier que tous les points du contours sont à 255 dans le masque
-    contour = cv2.findContours(np.uint8(mask), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)[0][0]
-    contour = np.flip(contour.squeeze(), axis=1)
+    contour = cv2.findContours(np.uint8(mask), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)[0]
+    if len(contour) == 0:
+        return np.empty((0,0))
+    contour = contour[0]
+    contour = np.flip(contour.squeeze(axis=1), axis=1)
     return contour
 
 def show_contour(mask, contour, idx_to_show=None):
