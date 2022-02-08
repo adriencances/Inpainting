@@ -1,4 +1,5 @@
 import numpy as np
+import cv2
 
 
 def get_patch(p, array, patch_size=9):
@@ -14,3 +15,26 @@ def get_patch(p, array, patch_size=9):
 
 def rolling_window(array, shape):  # rolling window for 2D array
     return np.lib.stride_tricks.sliding_window_view(array, shape)
+
+
+def load_image(image_file):
+    im = cv2.imread(image_file, cv2.IMREAD_COLOR)
+    return im
+
+
+def load_mask(mask_file, threshold=100):
+    mask = cv2.imread(mask_file,
+                      cv2.IMREAD_GRAYSCALE)
+    mask[mask >= threshold] = 255
+    mask[mask < threshold] = 0
+    return mask.astype(bool)
+
+
+def get_contour(mask):
+    # ATTENTION: peut-être vérifier que tous les points du contours sont à 255 dans le masque
+    contour = cv2.findContours(np.uint8(mask), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)[0]
+    if len(contour) == 0:
+        return np.empty((0,0))
+    contour = contour[0]
+    contour = np.flip(contour.squeeze(axis=1), axis=1)
+    return contour

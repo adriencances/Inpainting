@@ -13,26 +13,6 @@ scharr = np.array([[ -3-3j, 0-10j,  +3 -3j],
                     [-10+0j, 0+ 0j, +10 +0j],
                     [ -3+3j, 0+10j,  +3 +3j]]) # Gx + j*Gy
 
-def load_image(image_file):
-    im = cv2.imread(image_file,
-                    cv2.IMREAD_COLOR)
-    return im
-
-def load_mask(mask_file, threshold=100):
-    mask = cv2.imread(mask_file,
-                      cv2.IMREAD_GRAYSCALE)
-    mask[mask >= threshold] = 255
-    mask[mask < threshold] = 0
-    return mask
-
-def get_contour(mask):
-    # ATTENTION: peut-être vérifier que tous les points du contours sont à 255 dans le masque
-    contour = cv2.findContours(np.uint8(mask), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)[0]
-    if len(contour) == 0:
-        return np.empty((0,0))
-    contour = contour[0]
-    contour = np.flip(contour.squeeze(axis=1), axis=1)
-    return contour
 
 def show_contour(mask, contour, idx_to_show=None):
     new_mask = np.repeat(mask[:,:,None], 3, axis=2)
@@ -64,12 +44,6 @@ def get_normal(x, y, mask):
     normal = normal / norm
     return normal
 
-def inpainting(im, mask):
-    pixel_map = PixelMap(im, mask)
-    contour = get_contour(mask)
-    for p in contour:
-        pixel_map.udpate_confidence(p)
-    return
 
 
 if __name__ == "__main__":
@@ -106,12 +80,6 @@ if __name__ == "__main__":
     # plt.figure()
     # plt.imshow(gradx**2 + grady**2)
     # plt.show()
-
-
-    contour = get_contour(mask)
-    idx_all = range(len(contour))
-    idx_to_show = idx_all
-    show_contour(mask, contour, idx_to_show)
 
 
 
