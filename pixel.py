@@ -1,5 +1,3 @@
-from turtle import position
-from unittest.mock import patch
 import numpy as np
 from scipy import signal
 from dataclasses import dataclass
@@ -21,10 +19,12 @@ class Pixel:
 
 
 class PixelMap:
-    def __init__(self, im, mask, patch_size=9, alpha=255):
+    def __init__(self, im, im_rgb, mask, patch_size=9, alpha=255):
         self.im = im.copy()
         self.im[mask > 0] = 0
-
+        self.im_rgb = im_rgb.copy()
+        self.im_rgb_init = im_rgb.copy()
+        self.im_rgb[mask > 0] = 0
         self.mask_init = mask.copy()
         self.mask = mask.copy()
 
@@ -95,36 +95,41 @@ class PixelMap:
 
     def get_max_priority_pixel(self, contour):
         priorities = np.zeros(len(contour))
+        normals = []
         isophotes = self.compute_isophotes(contour)
         for idx, p in enumerate(contour):
             x, y = p
             self.update_confidence(p)
             normal = self.get_normal(p)
+            normals.append(normal)
             iso = isophotes[idx]
             data_term = abs(normal@iso)/self.alpha
             priorities[idx] = self.confidence[x,y] * data_term
         idx_max = priorities.argmax()
         p_hat = contour[idx_max]
-        return p_hat.tolist()
+        return p_hat.tolist(), isophotes, idx_max, normals, priorities
 
     def get_best_patch(self, p_hat):
         filter = self.no_masked_neighbors_filter(self.mask_init, patch_size=self.patch_size)
         filter = filter[(self.patch_size//2):-(self.patch_size//2)]
         filter = filter[:,(self.patch_size//2):-(self.patch_size//2)]
 
-        patch = get_patch(p_hat, self.im, self.patch_size)
+        patch = get_patch(p_hat, self.im_rgb, self.patch_size)
         mask_patch = get_patch(p_hat, self.mask, self.patch_size)
-        shape = (self.patch_size, self.patch_size)
-        windows = rolling_window(self.im, shape)
-        windows = windows*np.logical_not(mask_patch[None,None,:,:])
+        assert patch.shape[2] == 3
 
-        ssds = np.sum((windows-patch[None,None,:,:])**2, axis=(2,3))
+        shape = (self.patch_size, self.patch_size, 3)
+        windows = rolling_window(self.im_rgb, shape)
+        assert windows.shape[2] == 1
+        windows = windows*np.logical_not(mask_patch[None,None,None,:,:,None])
+
+        ssds = np.sum((windows-patch[None,None,None,:,:,:])**2, axis=(2,3,4,5))
         assert ssds.shape == filter.shape
-        ssds[np.logical_not(filter)] = np.inf
+        ssds[np.logical_not(filter)] = 1e100
 
         idx_min = np.random.choice(np.flatnonzero(ssds == ssds.min()))
         q_hat = list(np.unravel_index(idx_min, ssds.shape))
-        q_patch = windows[tuple(q_hat)]
+        q_patch = windows[tuple(q_hat)][0]
         q_hat[0] += self.patch_size//2
         q_hat[1] += self.patch_size//2
         return q_hat, patch, q_patch
@@ -149,6 +154,7 @@ class PixelMap:
         ref_positions[1] += q_hat[1] - p_hat[1]
         assert q_hat in ref_positions.transpose(1,0).tolist()
 
+        self.im_rgb[tuple(positions)] = self.im_rgb[tuple(ref_positions)]
         self.im[tuple(positions)] = self.im[tuple(ref_positions)]
         self.mask[tuple(positions)] = False
 
