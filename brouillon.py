@@ -49,13 +49,13 @@ def show_contour(im, contour, p_hat, q_hat, p_patch, q_patch, mask, positions, c
     new_im[tuple(positions)] = [255,255,0]
     # new_im[p_hat[0]-4:p_hat[0]+5,p_hat[1]-4:p_hat[1]+5] = [0,0,255]
 
-    gs = gridspec.GridSpec(4,2)
+    gs = gridspec.GridSpec(2,4)
     gs.update(wspace=0.5)
 
     # fig, ax = plt.subplots(1,2)
-    ax1 = plt.subplot(gs[:,0])
-    ax2 = plt.subplot(gs[:2,1])
-    ax3 = plt.subplot(gs[2:,1])
+    ax1 = plt.subplot(gs[0,:])
+    ax2 = plt.subplot(gs[1,:2])
+    ax3 = plt.subplot(gs[1,2:])
 
     ax1.imshow(new_im)
     ax1.scatter([p_hat[1]], [p_hat[0]], color="m", s=2)
@@ -115,8 +115,10 @@ def rgb2gray(rgb):
     return np.dot(rgb[...,:3], [0.2989, 0.5870, 0.1140])
 
 
-image_file = f"images/image{im_number}.png"
-mask_file = f"images/mask{im_number}.png"
+# image_file = f"images/image{im_number}.png"
+image_file = f"images/pigeon.png"
+mask_file = f"images/mask_pigeon.png"
+# mask_file = f"images/mask{im_number}.png"
 im_rgb = load_image(image_file)
 im_rgb = cv2.cvtColor(im_rgb, cv2.COLOR_BGR2RGB)
 mask = load_mask(mask_file)

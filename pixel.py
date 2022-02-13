@@ -125,7 +125,7 @@ class PixelMap:
 
         ssds = np.sum((windows-patch[None,None,None,:,:,:])**2, axis=(2,3,4,5))
         assert ssds.shape == filter.shape
-        ssds[np.logical_not(filter)] = 1e100
+        ssds[np.logical_not(filter)] = 1e14
 
         idx_min = np.random.choice(np.flatnonzero(ssds == ssds.min()))
         q_hat = list(np.unravel_index(idx_min, ssds.shape))
