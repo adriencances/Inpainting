@@ -1,8 +1,9 @@
 import numpy as np
 from scipy import signal
+from scipy.ndimage.filters import gaussian_filter
 from dataclasses import dataclass
 
-from utils import get_patch, rolling_window
+from utils import get_patch, rolling_window, rgb2gray
 
 
 @dataclass
@@ -19,8 +20,9 @@ class Pixel:
 
 
 class PixelMap:
-    def __init__(self, im, im_rgb, mask, patch_size=9, alpha=255):
-        self.im = im.copy()
+    def __init__(self, im_rgb, mask, patch_size=9, alpha=255):
+        self.im = rgb2gray(im_rgb)
+
         self.im[mask > 0] = 0
         self.im_rgb = im_rgb.copy()
         self.im_rgb_init = im_rgb.copy()
@@ -28,13 +30,12 @@ class PixelMap:
         self.mask_init = mask.copy()
         self.mask = mask.copy()
 
-        self.shape = im.shape[:2]
+        self.shape = im_rgb.shape[:2]
         self.height, self.width = self.shape
 
         self.patch_size = patch_size
         self.alpha = alpha
 
-        self.pixel_map = [[Pixel(im[x,y], x, y) for y in range(self.width)] for x in range(self.height)]
         self.confidence = np.zeros(self.shape)
         self.confidence[mask == 0] = 1
 
@@ -44,9 +45,6 @@ class PixelMap:
         self.scharr = np.array([[ -3-3j, 0-10j,  +3 -3j],
                                 [-10+0j, 0+ 0j, +10 +0j],
                                 [ -3+3j, 0+10j,  +3 +3j]])
-
-    def __getitem__(self, x, y):
-        return self.pixel_map[x][y]
 
     # VERIFIER SI SUBITLITE DANS ARTICLE
     def update_confidence(self, p):
@@ -115,6 +113,9 @@ class PixelMap:
         filter = filter[:,(self.patch_size//2):-(self.patch_size//2)]
 
         patch = get_patch(p_hat, self.im_rgb, self.patch_size)
+        # kernel = gaussian_filter(patch[:,:,0])
+        # for c in range(3):
+        #     patch[:,:,c] = signal.convolve2d(patch[:,:,c], kernel, mode="same")
         mask_patch = get_patch(p_hat, self.mask, self.patch_size)
         assert patch.shape[2] == 3
 

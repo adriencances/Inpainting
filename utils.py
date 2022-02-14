@@ -19,6 +19,7 @@ def rolling_window(array, shape):  # rolling window for 2D array
 
 def load_image(image_file):
     im = cv2.imread(image_file, cv2.IMREAD_COLOR)
+    im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
     return im
 
 
@@ -28,6 +29,10 @@ def load_mask(mask_file, threshold=100):
     mask[mask >= threshold] = 255
     mask[mask < threshold] = 0
     return mask.astype(bool)
+
+
+def rgb2gray(rgb):
+    return np.dot(rgb[...,:3], [0.2989, 0.5870, 0.1140])
 
 
 # def get_contour(mask):
