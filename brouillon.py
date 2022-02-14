@@ -141,6 +141,41 @@ def show_patches(p_patch, q_patch):
     plt.show()
 
 
+def get_ssds(pixel_map, p_hat):
+    filter = pixel_map.no_masked_neighbors_filter(pixel_map.mask_init, patch_size=pixel_map.patch_size)
+    filter = filter[(pixel_map.patch_size//2):-(pixel_map.patch_size//2)]
+    filter = filter[:,(pixel_map.patch_size//2):-(pixel_map.patch_size//2)]
+
+    patch = get_patch(p_hat, pixel_map.im_rgb, pixel_map.patch_size)
+    # kernel = gaussian_filter(patch[:,:,0])
+    # for c in range(3):
+    #     patch[:,:,c] = signal.convolve2d(patch[:,:,c], kernel, mode="same")
+    mask_patch = get_patch(p_hat, pixel_map.mask, pixel_map.patch_size)
+
+    shape = (pixel_map.patch_size, pixel_map.patch_size, 3)
+    windows = rolling_window(pixel_map.im_rgb, shape)
+    assert windows.shape[2] == 1
+    windows = windows*np.logical_not(mask_patch[None,None,None,:,:,None])
+
+    ssds = np.sum((windows-patch[None,None,None,:,:,:])**2, axis=(2,3,4,5))
+    assert ssds.shape == filter.shape
+    return ssds
+
+def show_ssds(pixel_map, p_hat, it):
+    border = pixel_map.patch_size//2
+    ssds = get_ssds(pixel_map, p_hat)
+    plt.figure()
+    plt.subplot(1,2,1)
+    plt.imshow(pixel_map.im_rgb_init)
+    plt.scatter([p_hat[1]], [p_hat[0]], s=5, c="red")
+    plt.axis("off")
+    plt.subplot(1,2,2)
+    plt.imshow(ssds)
+    plt.scatter([p_hat[1] - border], [p_hat[0] - border], s=5, c="red")
+    plt.axis("off")
+    plt.savefig(f"outputs/ssd_{it}.png")
+
+
 mask_sizes = []
 mask_size = np.count_nonzero(pixel_map.mask)
 mask_sizes.append(mask_size)
@@ -177,7 +212,10 @@ for it in tqdm(range(nb_iters)):
                      isophotes=isophotes, idx_max=idx_max, normals=normals,
                      priorities=priorities, output_dir=output_dir)
     # show_patches(p_patch, q_patch)
+    if it > nb_iters - 5:
+        show_ssds(pixel_map, p_hat, it)
     pixel_map.copy_image_data(p_hat, q_hat)
+
 
 
 # plt.figure()
@@ -187,30 +225,3 @@ for it in tqdm(range(nb_iters)):
 # plt.ylabel('Nb elements contour')
 # plt.show()
 
-
-def get_ssds(pixel_map, p_hat):
-    filter = pixel_map.no_masked_neighbors_filter(pixel_map.mask_init, patch_size=pixel_map.patch_size)
-    filter = filter[(pixel_map.patch_size//2):-(pixel_map.patch_size//2)]
-    filter = filter[:,(pixel_map.patch_size//2):-(pixel_map.patch_size//2)]
-
-    patch = get_patch(p_hat, pixel_map.im_rgb, pixel_map.patch_size)
-    mask_patch = get_patch(p_hat, pixel_map.mask, pixel_map.patch_size)
-    shape = (pixel_map.patch_size, pixel_map.patch_size)
-    windows = rolling_window(pixel_map.im_rg, shape)
-    windows = windows*np.logical_not(mask_patch[None,None,None,:,:,None])
-
-    ssds = np.sum((windows-patch[None,None,None,:,:,:])**2, axis=(2,3,4,5))
-    assert ssds.shape == filter.shape
-    # ssds[np.logical_not(filter)] = np.inf
-    return ssds
-
-def show_ssds(pixel_map, p_hat):
-    ssds = get_ssds(pixel_map, p_hat)
-    plt.figure()
-    plt.subplot(1,2,1)
-    plt.imshow(pixel_map.im_init)
-    plt.axis("off")
-    plt.subplot(1,2,2)
-    plt.imshow(ssds)
-    plt.axis("off")
-    plt.show()
