@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy import signal
 from scipy.ndimage.filters import gaussian_filter
@@ -22,13 +23,14 @@ class Pixel:
 class PixelMap:
     def __init__(self, im_rgb, mask, patch_size=9, alpha=255):
         self.im = rgb2gray(im_rgb)
-
         self.im[mask > 0] = 0
+
         self.im_rgb = im_rgb.copy()
-        self.im_rgb_init = im_rgb.copy()
         self.im_rgb[mask > 0] = 0
-        self.mask_init = mask.copy()
+        self.im_rgb_init = im_rgb.copy()
+
         self.mask = mask.copy()
+        self.mask_init = mask.copy()
 
         self.shape = im_rgb.shape[:2]
         self.height, self.width = self.shape
@@ -113,9 +115,16 @@ class PixelMap:
         filter = filter[:,(self.patch_size//2):-(self.patch_size//2)]
 
         patch = get_patch(p_hat, self.im_rgb, self.patch_size)
-        # kernel = gaussian_filter(patch[:,:,0])
-        # for c in range(3):
-        #     patch[:,:,c] = signal.convolve2d(patch[:,:,c], kernel, mode="same")
+        # patch_ori = patch.copy()
+        # patch = gaussian_filter(patch, sigma=[1,1,0])
+        # plt.figure()
+        # plt.subplot(1,2,1)
+        # plt.imshow(patch_ori)
+        # plt.axis("off")
+        # plt.subplot(1,2,2)
+        # plt.imshow(patch)
+        # plt.axis("off")
+        # plt.show()
         mask_patch = get_patch(p_hat, self.mask, self.patch_size)
         assert patch.shape[2] == 3
 

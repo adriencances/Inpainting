@@ -19,6 +19,7 @@ parser.add_argument("--f", dest="image_and_mask_paths", nargs=2,
                     # default=["images/double_cross.jpg", "images/mask_double_cross.jpg"],
                     help="paths of image and mask")
 parser.add_argument("--out", dest="output_dir", default=None, help="name of the output directory")
+parser.add_argument("--prio", dest="plot_priorities", default=False, action="store_true", help="plot priorities")
 
 # Parse arguments
 args = parser.parse_args()
@@ -114,12 +115,33 @@ def show_contour(im, contour, p_hat, q_hat, p_patch, q_patch, mask, positions,
     plt.savefig(file_name)
     plt.close()
 
+def show_priority(pixel_map, contour, priorities, output_dir, it):
+    new_im = pixel_map.im_rgb.copy()
+    new_im[mask>0] = [255,0,0]
+    range = priorities.max() - priorities.min()
+    priority_map = np.zeros(mask.shape)
+    priority_map[:,:] = min(priorities) - range/2
+    # new_im = np.tile(im[:,:,None],3).astype(np.uint8)
+    for i, p in enumerate(contour):
+        priority_map[p[0], p[1]] = priorities[i]
+    # new_im[mask] = [0,0,255]
+    # new_im[tuple(positions)] = [255,255,0]
+    # new_im[p_hat[0]-4:p_hat[0]+5,p_hat[1]-4:p_hat[1]+5] = [0,0,255]
 
-def show_result(im, mask):
-    cmap = cm.get_cmap("gray", 255)
-    new_im = np.tile(im[:,:,None],3).astype(np.uint8)
-    new_im_masked = np.tile(im[:,:,None],3).astype(np.uint8)
-    new_im_masked[mask] = [255,0,0]
+    plt.figure()
+    plt.subplot(1,2,1)
+    plt.imshow(new_im)
+    plt.axis("off")
+    plt.subplot(1,2,2)
+    plt.imshow(priority_map)
+    plt.axis("off")
+    plt.savefig(f"outputs/{output_dir}/priorities_{it}.png")
+
+
+def show_result(pixel_map, output_dir):
+    new_im = pixel_map.im_rgb.copy()
+    new_im_masked = pixel_map.im_rgb.copy()
+    new_im_masked[pixel_map.mask_init] = [255,0,0]
     plt.figure()
     plt.subplot(1,2,1)
     plt.imshow(new_im_masked)
@@ -127,7 +149,8 @@ def show_result(im, mask):
     plt.subplot(1,2,2)
     plt.imshow(new_im)
     plt.axis("off")
-    plt.show()
+    plt.savefig(f"outputs/{output_dir}/result.png")
+    # plt.show()
 
 
 def show_patches(p_patch, q_patch):
@@ -195,6 +218,11 @@ for it in tqdm(range(nb_iters)):
     contour_length.append(contour.shape[0])
     p_hat, isophotes, idx_max, normals, priorities = pixel_map.get_max_priority_pixel(contour)
 
+    # SHOW PRIORITIES
+    if args.plot_priorities and it==0:
+        show_priority(pixel_map, contour, priorities, output_dir, it)
+        # break
+
     q_hat, p_patch, q_patch = pixel_map.get_best_patch(p_hat)
 
     xmin = max(p_hat[0] - (pixel_map.patch_size//2), 0)
@@ -216,7 +244,7 @@ for it in tqdm(range(nb_iters)):
         show_ssds(pixel_map, p_hat, it)
     pixel_map.copy_image_data(p_hat, q_hat)
 
-
+show_result(pixel_map, output_dir)
 
 # plt.figure()
 # plt.plot(np.arange(len(contour_length)), contour_length)
