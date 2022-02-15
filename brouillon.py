@@ -182,7 +182,7 @@ mask_sizes.append(mask_size)
 contour_length = []
 log_file = "log.txt"
 with open(log_file, "w") as f:
-    f.write("Taille du patch")
+    f.write("Taille du patch\n")
 for it in tqdm(range(nb_iters)):
     mask_size = np.count_nonzero(pixel_map.mask)
     mask_sizes.append(mask_size)
