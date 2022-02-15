@@ -60,8 +60,7 @@ class PixelMap:
         return filter
 
     def compute_isophotes(self, contour):
-        # half_patch_size = self.patch_size//2
-        half_patch_size = 2
+        half_patch_size = self.patch_size//2
         isophotes = []
         filter = self.no_masked_neighbors_filter(self.mask)
 
